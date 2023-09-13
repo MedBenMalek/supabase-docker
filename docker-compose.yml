@@ -307,8 +307,7 @@ services:
         # Disable this if you are using an external Postgres database
         condition: service_healthy
     # Uncomment to use Big Query backend for analytics
-    volumes:
-      - ./volumes/gcloud.json:/opt/app/rel/logflare/bin/gcloud.json:ro
+    # volumes:
     #   - type: bind
     #     source: ${PWD}/gcloud.json
     #     target: /opt/app/rel/logflare/bin/gcloud.json
