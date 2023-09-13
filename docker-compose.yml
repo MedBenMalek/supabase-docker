@@ -313,7 +313,7 @@ services:
     #     target: /opt/app/rel/logflare/bin/gcloud.json
     #     read_only: true
     environment:
-      LOGFLARE_NODE_HOST:  127.0.0.1
+      LOGFLARE_NODE_HOST: localhost
       DB_USERNAME: supabase_admin
       DB_DATABASE: ${POSTGRES_DB}
       DB_HOSTNAME: ${POSTGRES_HOST}
