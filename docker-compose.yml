@@ -1,3 +1,9 @@
+# Usage
+#   Start:          docker compose up
+#   With helpers:   docker compose -f docker-compose.yml -f ./dev/docker-compose.dev.yml up
+#   Stop:           docker compose down
+#   Destroy:        docker compose -f docker-compose.yml -f ./dev/docker-compose.dev.yml down -v --remove-orphans
+
 version: "3.8"
 
 services:
@@ -12,14 +18,14 @@ services:
           "CMD",
           "node",
           "-e",
-          "require('http').get('http://localhost:9002/api/profile', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+          "require('http').get('http://localhost:3000/api/profile', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
         ]
       timeout: 5s
       interval: 5s
       retries: 3
-    #depends_on:
-      #analytics:
-        #condition: service_healthy
+    depends_on:
+      analytics:
+        condition: service_healthy
     environment:
       STUDIO_PG_META_URL: http://meta:8080
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -49,9 +55,9 @@ services:
     ports:
       - ${KONG_HTTP_PORT}:8000/tcp
       - ${KONG_HTTPS_PORT}:8443/tcp
-    #depends_on:
-      #analytics:
-        #condition: service_healthy
+    depends_on:
+      analytics:
+        condition: service_healthy
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
@@ -71,12 +77,12 @@ services:
   auth:
     container_name: supabase-auth
     image: supabase/gotrue:v2.82.4
-    #depends_on:
-      #db:
+    depends_on:
+      db:
         # Disable this if you are using an external Postgres database
-        # condition: service_healthy
-      #analytics:
-        #condition: service_healthy
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -131,12 +137,12 @@ services:
   rest:
     container_name: supabase-rest
     image: postgrest/postgrest:v11.1.0
-    #depends_on:
-      #db:
+    depends_on:
+      db:
         # Disable this if you are using an external Postgres database
-        # condition: service_healthy
-      #analytics:
-        #condition: service_healthy
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -151,12 +157,12 @@ services:
   realtime:
     container_name: realtime-dev.supabase-realtime
     image: supabase/realtime:v2.10.1
-    #depends_on:
-      #db:
+    depends_on:
+      db:
         # Disable this if you are using an external Postgres database
-        # condition: service_healthy
-      #analytics:
-        #condition: service_healthy
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -191,14 +197,14 @@ services:
   storage:
     container_name: supabase-storage
     image: supabase/storage-api:v0.40.4
-    #depends_on:
-      #db:
+    depends_on:
+      db:
         # Disable this if you are using an external Postgres database
-        # condition: service_healthy
-      #rest:
-        #condition: service_started
-      #imgproxy:
-        #condition: service_started
+        condition: service_healthy
+      rest:
+        condition: service_started
+      imgproxy:
+        condition: service_started
     healthcheck:
       test:
         [
@@ -216,7 +222,7 @@ services:
     environment:
       ANON_KEY: ${ANON_KEY}
       SERVICE_KEY: ${SERVICE_ROLE_KEY}
-      POSTGREST_URL: http://rest:9002
+      POSTGREST_URL: http://rest:3000
       PGRST_JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       FILE_SIZE_LIMIT: 52428800
@@ -250,28 +256,28 @@ services:
   meta:
     container_name: supabase-meta
     image: supabase/postgres-meta:v0.68.0
-    #depends_on:
-      #db:
+    depends_on:
+      db:
         # Disable this if you are using an external Postgres database
-        # condition: service_healthy
-      #analytics:
-        #condition: service_healthy
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       PG_META_PORT: 8080
       PG_META_DB_HOST: ${POSTGRES_HOST}
       PG_META_DB_PORT: ${POSTGRES_PORT}
       PG_META_DB_NAME: ${POSTGRES_DB}
-      PG_META_DB_USER: tunibus
+      PG_META_DB_USER: supabase_admin
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
 
   functions:
     container_name: supabase-edge-functions
     image: supabase/edge-runtime:v1.13.1
     restart: unless-stopped
-    #depends_on:
-      #analytics:
-        #condition: service_healthy
+    depends_on:
+      analytics:
+        condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET}
       SUPABASE_URL: http://kong:8000
@@ -296,10 +302,10 @@ services:
       interval: 5s
       retries: 10
     restart: unless-stopped
-    #depends_on:
-      #db:
+    depends_on:
+      db:
         # Disable this if you are using an external Postgres database
-        # condition: service_healthy
+        condition: service_healthy
     # Uncomment to use Big Query backend for analytics
     # volumes:
     #   - type: bind
@@ -329,74 +335,74 @@ services:
       # GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
       # GOOGLE_PROJECT_NUMBER: ${GOOGLE_PROJECT_NUMBER}
     ports:
-      - 4000:4000
+      - 9000:4000
     entrypoint: |
-                  sh -c `cat <<'EOF' > run.sh && sh run.sh
-                  ./logflare eval Logflare.Release.migrate
-                  ./logflare start --sname logflare
-                  EOF
-                  `
+      sh -c `cat <<'EOF' > run.sh && sh run.sh
+      ./logflare eval Logflare.Release.migrate
+      ./logflare start --sname logflare
+      EOF
+      `
 
   # Comment out everything below this point if you are using an external Postgres database
-  # db:
-  #   container_name: supabase-db
-  #   image: supabase/postgres:15.1.0.103
-  #   healthcheck:
-  #     test: pg_isready -U postgres -h localhost
-  #     interval: 5s
-  #     timeout: 5s
-  #     retries: 10
-  #   depends_on:
-  #     vector:
-  #       condition: service_healthy
-  #   command:
-  #     - postgres
-  #     - -c
-  #     - config_file=/etc/postgresql/postgresql.conf
-  #     - -c
-  #     - log_min_messages=fatal # prevents Realtime polling queries from appearing in logs
-  #   restart: unless-stopped
-  #   ports:
-  #     # Pass down internal port because it's set dynamically by other services
-  #     - 127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}
-  #   environment:
-  #     POSTGRES_HOST: /var/run/postgresql
-  #     PGPORT: ${POSTGRES_PORT}
-  #     POSTGRES_PORT: ${POSTGRES_PORT}
-  #     PGPASSWORD: ${POSTGRES_PASSWORD}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #     PGDATABASE: ${POSTGRES_DB}
-  #     POSTGRES_DB: ${POSTGRES_DB}
-  #   volumes:
-  #     - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
-  #     # Must be superuser to create event trigger
-  #     - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
-  #     # Must be superuser to alter reserved role
-  #     - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
-  #     # PGDATA directory is persisted between restarts
-  #     - ./volumes/db/data:/var/lib/postgresql/data:Z
-  #     # Changes required for Analytics support
-  #     - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
-
-  # vector:
-  #   container_name: supabase-vector
-  #   image: timberio/vector:0.28.1-alpine
-  #   healthcheck:
-  #     test:
-  #       [
-
-  #         "CMD",
-  #         "wget",
-  #         "--no-verbose",
-  #         "--tries=1",
-  #         "--spider",
-  #         "http://vector:9001/health"
-  #       ]
-  #     timeout: 5s
-  #     interval: 5s
-  #     retries: 3
-  #   volumes:
-  #     - ./volumes/logs/vector.yml:/etc/vector/vector.yml:ro
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-
-  #   command: [ "--config", "etc/vector/vector.yml" ]
+#  db:
+#    container_name: supabase-db
+#    image: supabase/postgres:15.1.0.103
+#    healthcheck:
+#      test: pg_isready -U postgres -h localhost
+#      interval: 5s
+#      timeout: 5s
+#      retries: 10
+#    depends_on:
+#      vector:
+#        condition: service_healthy
+#    command:
+#      - postgres
+#      - -c
+#      - config_file=/etc/postgresql/postgresql.conf
+#      - -c
+#      - log_min_messages=fatal # prevents Realtime polling queries from appearing in logs
+#    restart: unless-stopped
+#    ports:
+#      # Pass down internal port because it's set dynamically by other services
+#      - 127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}
+#    environment:
+#      POSTGRES_HOST: /var/run/postgresql
+#      PGPORT: ${POSTGRES_PORT}
+#      POSTGRES_PORT: ${POSTGRES_PORT}
+#      PGPASSWORD: ${POSTGRES_PASSWORD}
+#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#      PGDATABASE: ${POSTGRES_DB}
+#      POSTGRES_DB: ${POSTGRES_DB}
+#    volumes:
+#      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+#      # Must be superuser to create event trigger
+#      - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+#      # Must be superuser to alter reserved role
+#      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+#      # PGDATA directory is persisted between restarts
+#      - ./volumes/db/data:/var/lib/postgresql/data:Z
+#      # Changes required for Analytics support
+#      - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+#
+#  vector:
+#    container_name: supabase-vector
+#    image: timberio/vector:0.28.1-alpine
+#    healthcheck:
+#      test:
+#        [
+#
+#          "CMD",
+#          "wget",
+#          "--no-verbose",
+#          "--tries=1",
+#          "--spider",
+#          "http://vector:9001/health"
+#        ]
+#      timeout: 5s
+#      interval: 5s
+#      retries: 3
+#    volumes:
+#      - ./volumes/logs/vector.yml:/etc/vector/vector.yml:ro
+#      - ${DOCKER_SOCKET_LOCATION}:/var/run/docker.sock:ro
+#
+#    command: [ "--config", "etc/vector/vector.yml" ]
