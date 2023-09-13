@@ -135,8 +135,8 @@ services:
 
   ## Secure Realtime routes
   - name: realtime-v1
-    _comment: 'Realtime: /realtime/v1/* -> ws://realtime:4000/socket/*'
-    url: http://realtime-dev.supabase-realtime:4000/socket/
+    _comment: 'Realtime: /realtime/v1/* -> ws://realtime:8082/socket/*'
+    url: http://realtime-dev.supabase-realtime:8082/socket/
     routes:
       - name: realtime-v1-all
         strip_path: true
@@ -180,8 +180,8 @@ services:
 
   ## Analytics routes
   - name: analytics-v1
-    _comment: 'Analytics: /analytics/v1/* -> http://logflare:4000/*'
-    url: http://analytics:4000/
+    _comment: 'Analytics: /analytics/v1/* -> http://logflare:8082/*'
+    url: http://analytics:8082/
     routes:
       - name: analytics-v1-all
         strip_path: true
