@@ -78,9 +78,9 @@ services:
     container_name: supabase-auth
     image: supabase/gotrue:v2.82.4
     depends_on:
-      # db:
+      db:
         # Disable this if you are using an external Postgres database
-      # condition: service_healthy
+        condition: service_healthy
       analytics:
         condition: service_healthy
     healthcheck:
@@ -103,7 +103,7 @@ services:
       API_EXTERNAL_URL: ${API_EXTERNAL_URL}
 
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgres://tunibus:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
 
       GOTRUE_SITE_URL: ${SITE_URL}
       GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
@@ -138,14 +138,14 @@ services:
     container_name: supabase-rest
     image: postgrest/postgrest:v11.1.0
     depends_on:
-      # db:
+      db:
         # Disable this if you are using an external Postgres database
-      # condition: service_healthy
+        condition: service_healthy
       analytics:
         condition: service_healthy
     restart: unless-stopped
     environment:
-      PGRST_DB_URI: postgres://tunibus:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       PGRST_DB_SCHEMAS: ${PGRST_DB_SCHEMAS}
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${JWT_SECRET}
@@ -158,9 +158,9 @@ services:
     container_name: realtime-dev.supabase-realtime
     image: supabase/realtime:v2.10.1
     depends_on:
-      # db:
+      db:
         # Disable this if you are using an external Postgres database
-      # condition: service_healthy
+        condition: service_healthy
       analytics:
         condition: service_healthy
     healthcheck:
@@ -179,7 +179,7 @@ services:
       PORT: 4000
       DB_HOST: ${POSTGRES_HOST}
       DB_PORT: ${POSTGRES_PORT}
-      DB_USER: tunibus
+      DB_USER: supabase_admin
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: ${POSTGRES_DB}
       DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
@@ -198,9 +198,9 @@ services:
     container_name: supabase-storage
     image: supabase/storage-api:v0.40.4
     depends_on:
-      # db:
+      db:
         # Disable this if you are using an external Postgres database
-      # condition: service_healthy
+        condition: service_healthy
       rest:
         condition: service_started
       imgproxy:
@@ -224,7 +224,7 @@ services:
       SERVICE_KEY: ${SERVICE_ROLE_KEY}
       POSTGREST_URL: http://rest:3000
       PGRST_JWT_SECRET: ${JWT_SECRET}
-      DATABASE_URL: postgres://tunibus:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       FILE_SIZE_LIMIT: 52428800
       STORAGE_BACKEND: file
       FILE_STORAGE_BACKEND_PATH: /var/lib/storage
@@ -257,9 +257,9 @@ services:
     container_name: supabase-meta
     image: supabase/postgres-meta:v0.68.0
     depends_on:
-      # db:
+      db:
         # Disable this if you are using an external Postgres database
-      # condition: service_healthy
+        condition: service_healthy
       analytics:
         condition: service_healthy
     restart: unless-stopped
@@ -268,7 +268,7 @@ services:
       PG_META_DB_HOST: ${POSTGRES_HOST}
       PG_META_DB_PORT: ${POSTGRES_PORT}
       PG_META_DB_NAME: ${POSTGRES_DB}
-      PG_META_DB_USER: tunibus
+      PG_META_DB_USER: supabase_admin
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
 
   functions:
@@ -283,7 +283,7 @@ services:
       SUPABASE_URL: http://kong:8000
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
-      SUPABASE_DB_URL: postgresql://tunibus:${POSTGRES_PASSWORD}@{POSTGRES_DB}:${POSTGRES_PORT}/${POSTGRES_DB}
+      SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@{POSTGRES_DB}:${POSTGRES_PORT}/${POSTGRES_DB}
       # TODO: Allow configuring VERIFY_JWT per function. This PR might help: https://github.com/supabase/cli/pull/786
       VERIFY_JWT: "${FUNCTIONS_VERIFY_JWT}"
     volumes:
@@ -302,10 +302,10 @@ services:
       interval: 5s
       retries: 10
     restart: unless-stopped
-      # depends_on:
-      # db:
+    depends_on:
+      db:
         # Disable this if you are using an external Postgres database
-    # condition: service_healthy
+        condition: service_healthy
     # Uncomment to use Big Query backend for analytics
     # volumes:
     #   - type: bind
@@ -314,7 +314,7 @@ services:
     #     read_only: true
     environment:
       LOGFLARE_NODE_HOST:  127.0.0.1
-      DB_USERNAME: tunibus
+      DB_USERNAME: supabase_admin
       DB_DATABASE: ${POSTGRES_DB}
       DB_HOSTNAME: ${POSTGRES_HOST}
       DB_PORT: ${POSTGRES_PORT}
@@ -327,7 +327,7 @@ services:
       RELEASE_COOKIE: cookie
 
       # Comment variables to use Big Query backend for analytics
-      POSTGRES_BACKEND_URL: postgresql://tunibus:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      POSTGRES_BACKEND_URL: postgresql://supabase_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       POSTGRES_BACKEND_SCHEMA: _analytics
       LOGFLARE_FEATURE_FLAG_OVERRIDE: multibackend=true
 
@@ -344,46 +344,46 @@ services:
       `
 
   # Comment out everything below this point if you are using an external Postgres database
-#  db:
-#    container_name: supabase-db
-#    image: supabase/postgres:15.1.0.103
-#    healthcheck:
-#      test: pg_isready -U postgres -h localhost
-#      interval: 5s
-#      timeout: 5s
-#      retries: 10
+  db:
+    container_name: supabase-db
+    image: supabase/postgres:15.1.0.103
+    healthcheck:
+      test: pg_isready -U postgres -h localhost
+      interval: 5s
+      timeout: 5s
+      retries: 10
 #    depends_on:
 #      vector:
 #        condition: service_healthy
-#    command:
-#      - postgres
-#      - -c
-#      - config_file=/etc/postgresql/postgresql.conf
-#      - -c
-#      - log_min_messages=fatal # prevents Realtime polling queries from appearing in logs
-#    restart: unless-stopped
-#    ports:
-#      # Pass down internal port because it's set dynamically by other services
-#      - 127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}
-#    environment:
-#      POSTGRES_HOST: /var/run/postgresql
-#      PGPORT: ${POSTGRES_PORT}
-#      POSTGRES_PORT: ${POSTGRES_PORT}
-#      PGPASSWORD: ${POSTGRES_PASSWORD}
-#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#      PGDATABASE: ${POSTGRES_DB}
-#      POSTGRES_DB: ${POSTGRES_DB}
-#    volumes:
-#      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
-#      # Must be superuser to create event trigger
-#      - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
-#      # Must be superuser to alter reserved role
-#      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
-#      # PGDATA directory is persisted between restarts
-#      - ./volumes/db/data:/var/lib/postgresql/data:Z
-#      # Changes required for Analytics support
-#      - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
-#
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal # prevents Realtime polling queries from appearing in logs
+    restart: unless-stopped
+    ports:
+      # Pass down internal port because it's set dynamically by other services
+      - 127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: ${POSTGRES_PORT}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      # Must be superuser to create event trigger
+      - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      # Must be superuser to alter reserved role
+      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      # PGDATA directory is persisted between restarts
+      - ./volumes/db/data:/var/lib/postgresql/data:Z
+      # Changes required for Analytics support
+      - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+
 #  vector:
 #    container_name: supabase-vector
 #    image: timberio/vector:0.28.1-alpine
